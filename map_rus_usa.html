@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Circles on the Map (Leaflet)</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        #map { height: 100vh; }
+        .label {
+            font-size: 14px;
+            font-weight: bold;
+            color: black;
+            background: rgba(255, 255, 255, 0.7);
+            padding: 3px 6px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <script>
+        // Coordinates of Cape Dezhnev (Easternmost point of Russia)
+        var baseLat = 66.0762;
+        var baseLng = -169.6678;
+
+        // Weapon systems with their max range (in km), removed Iskander-K (R-500)
+        var systems = [
+            {name: "Iskander-M", range: 500},
+            {name: "Kalibr", range: 1500},
+            {name: "S-400", range: 400},
+            {name: "P-800 Oniks", range: 300}
+        ];
+
+        // Sort by range (to distribute labels evenly)
+        systems.sort((a, b) => a.range - b.range);
+
+        // Map initialization
+        var map = L.map('map').setView([baseLat, baseLng], 4);
+
+        // OpenStreetMap layer
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Define min/max range
+        var minRange = systems[0].range;
+        var maxRange = systems[systems.length - 1].range;
+
+        // Place circles and labels
+        systems.forEach((system, index) => {
+            // Add circle
+            L.circle([baseLat, baseLng], {
+                color: 'red',
+                fillColor: '#f03',
+                fillOpacity: 0.2,
+                radius: system.range * 1000
+            }).addTo(map);
+
+            // Distribute labels EVEN FARTHER along the diagonal
+            var factor = (system.range - minRange) / (maxRange - minRange); // Normalize between 0 and 1
+            var labelLat = baseLat - factor * 20; // Spread across latitude
+            var labelLng = baseLng + factor * 50; // Spread across longitude
+
+            // If the system is "Kalibr", reduce the shift in the diagonal by 3x
+            if (system.name === "Kalibr") {
+                labelLat += factor * 7; // Decrease the shift on latitude by 3x
+                labelLng -= factor * 17; // Decrease the shift on longitude by 3x
+            }
+
+            // Add label
+            L.marker([labelLat, labelLng], {
+                icon: L.divIcon({
+                    className: 'label',
+                    html: `<b>${system.name} (${system.range} km)</b>`,
+                    iconSize: [160, 30]
+                })
+            }).addTo(map);
+        });
+    </script>
+</body>
+</html>
+
